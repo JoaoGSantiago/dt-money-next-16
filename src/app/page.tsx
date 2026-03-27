@@ -1,13 +1,14 @@
 'use client';
 import { BodyContainer } from "@/components/BodyContainer";
 import { CardContainer } from "@/components/CardContainer";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { FormModal } from "@/components/FormModal";
 import { Header } from "@/components/Header";
 import { Table } from "@/components/Table";
 import { ITransaction, TotalCard } from "@/types/transaction";
 import { useMemo, useState } from "react";
 
-const transactions:ITransaction[] = [
+const transactions: ITransaction[] = [
   {
     id: "1",
     title: "Salário",
@@ -45,13 +46,34 @@ const transactions:ITransaction[] = [
 export default function Home() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [transactionData, setTransactionData] = useState(transactions);
+  const [transactionToEdit, setTransactionToEdit] = useState<ITransaction | null>(null);
+  const [transactionToDeleteId, setTransactionToDeleteId] = useState<string | null>(null);
 
-  const handleAddTransaction = (transaction: ITransaction) => {
-    setTransactionData( (prevState)=> [...prevState, transaction]);
+  const handleFormSubmit = (transaction: ITransaction) => {
+    if (transactionToEdit) {
+      setTransactionData((prev) => prev.map((t) => t.id === transaction.id ? transaction : t));
+    } else {
+      setTransactionData((prev) => [...prev, transaction]);
+    }
+  }
+
+  const handleCloseFormModal = () => {
+    setIsFormModalOpen(false);
+    setTransactionToEdit(null);
+  }
+
+  const handleOpenEdit = (transaction: ITransaction) => {
+    setTransactionToEdit(transaction);
+    setIsFormModalOpen(true);
+  }
+
+  const handleConfirmDelete = () => {
+    setTransactionData((prev) => prev.filter((t) => t.id !== transactionToDeleteId));
+    setTransactionToDeleteId(null);
   }
 
   const calculaTotal = useMemo(() => {
-    const totals = transactionData.reduce<TotalCard>((acc, transaction) => {
+    return transactionData.reduce<TotalCard>((acc, transaction) => {
       if (transaction.type === "INCOME") {
         acc.income += transaction.price;
         acc.total += transaction.price;
@@ -60,22 +82,37 @@ export default function Home() {
         acc.total -= transaction.price;
       }
       return acc;
-    }, { total: 0, income: 0, outcome: 0 })
-
-    return totals;
+    }, { total: 0, income: 0, outcome: 0 });
   }, [transactionData]);
-  
+
   return (
     <div className="h-full min-h-screen">
-      <Header handleOpenFormModal={() => setIsFormModalOpen(true)}/>
+      <Header handleOpenFormModal={() => setIsFormModalOpen(true)} />
       <BodyContainer>
-         <CardContainer totalValues={calculaTotal} />
-         <Table data={transactionData} />
+        <CardContainer totalValues={calculaTotal} />
+        <Table
+          data={transactionData}
+          onEdit={handleOpenEdit}
+          onDelete={(id) => setTransactionToDeleteId(id)}
+        />
       </BodyContainer>
-      {isFormModalOpen && <FormModal 
-          closeModal={() => setIsFormModalOpen(false)} 
-          title="Criar Transação" 
-          addTransaction={handleAddTransaction} />}
+
+      {isFormModalOpen && (
+        <FormModal
+          closeModal={handleCloseFormModal}
+          title={transactionToEdit ? "Editar Transação" : "Criar Transação"}
+          onSubmit={handleFormSubmit}
+          transaction={transactionToEdit ?? undefined}
+        />
+      )}
+
+      {transactionToDeleteId && (
+        <ConfirmModal
+          message="Tem certeza que deseja excluir esta transação?"
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setTransactionToDeleteId(null)}
+        />
+      )}
     </div>
   );
 }

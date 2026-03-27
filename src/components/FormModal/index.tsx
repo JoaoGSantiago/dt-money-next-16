@@ -2,18 +2,19 @@ import { ITransaction } from "@/types/transaction";
 import { Input } from "../Form/Input";
 import { TransactionSwitcher } from "../TransactionSwitcher";
 import { TransactionType } from "@/types/transaction";
-import { TransactionFormData, transactionSchema, defaultValues } from "./schema";
+import { TransactionFormData, transactionSchema, getDefaultValues } from "./schema";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 
 export type FormModalProps = {
    title: string;
    closeModal: () => void;
-   addTransaction: (transaction: ITransaction) => void;
+   onSubmit: (transaction: ITransaction) => void;
+   transaction?: ITransaction;
 }
 
-export const FormModal = ({ title, closeModal, addTransaction }: FormModalProps) => {
-  
+export const FormModal = ({ title, closeModal, onSubmit, transaction }: FormModalProps) => {
+
   const {
     handleSubmit,
     register,
@@ -22,22 +23,22 @@ export const FormModal = ({ title, closeModal, addTransaction }: FormModalProps)
     watch
   } = useForm<TransactionFormData>({
     resolver: yupResolver(transactionSchema),
-    defaultValues
-  })  
+    defaultValues: transaction ? { ...transaction } : getDefaultValues()
+  })
+
   const handleTypeChange = (type: TransactionType) => {
     setValue("type", type);
   }
 
   const handleSubmitForm = (data: TransactionFormData) => {
-    addTransaction(data as ITransaction);
+    onSubmit(data as ITransaction);
     closeModal();
   }
-
 
   const type = watch("type");
 
   return (
-    <div 
+    <div
         className="relative z-10 min-w-xl"
         aria-labelledby="modal-title"
         role="dialog"
@@ -69,46 +70,46 @@ export const FormModal = ({ title, closeModal, addTransaction }: FormModalProps)
                             </div>
                         </div>
                     </div>
-                    
+
                     <form className="flex flex-col gap-4 px-12 mt-4 mb-6" onSubmit={handleSubmit(handleSubmitForm)}>
-                        <Input 
+                        <Input
                            type="text"
-                           placeholder="Nome"   
+                           placeholder="Nome"
                            {...register("title")}
                            error={errors.title?.message}
                         />
-                        <Input 
+                        <Input
                           type="number"
-                          placeholder="Preço"   
+                          placeholder="Preço"
                           {...register("price")}
                           error={errors.price?.message}
                         />
 
-                        <TransactionSwitcher 
+                        <TransactionSwitcher
                           type={type as TransactionType}
                           handleTypeChange={handleTypeChange}
                         />
                         {errors.type && (<span className="text-red-500">{errors.type.message}</span>)}
 
-                        <Input 
+                        <Input
                            type="text"
-                           placeholder="Categoria"  
-                           {...register("category")} 
+                           placeholder="Categoria"
+                           {...register("category")}
                             error={errors.category?.message}
                         />
-                         
-                        <button 
+
+                        <button
                            type="submit"
                            className="mt-6 mb-16 w-full justify-center rounded-md bg-income text-white px-3 py-5 text-normal font-semibold shadow-sm hover:opacity-80"
                         >
-                           Confirmar     
-                        </button> 
+                           Confirmar
+                        </button>
                     </form>
 
                 </div>
            </div>
-        </div> 
-         
+        </div>
+
 
     </div>
   )
